@@ -9,16 +9,16 @@ export default function SidebarBox() {
       "
     >
       {/* Logo section (dummy) */}
-      <div className="hidden md:flex flex-col items-center w-full mb-8 mt-2">
-        <img src="/assets/kemenkop/logo_header.png" alt="logo" className="w-[68%] h-[100%]" />
+  <div className="hidden md:flex flex-col items-center w-full mb-8 mt-2">
+  <img src="/assets/kemenkop/logo_header.png" alt="logo" className="w-[68%] h-full" />
        </div>
 
       {/* Menu section */}
       <nav className="flex-1 w-full flex flex-col gap-8 md:gap-8 px-8">
-        <SidebarMenuItem icon="/assets/icon/dashboard.svg" label="Dashboard" active iconClass="w-6 h-6 text-primary" />
-        <SidebarMenuItem icon="/assets/icon/dashboard.svg" label="Ajukan Pinjaman" iconClass="w-6 h-6 text-primary" />
-        <SidebarMenuItem icon="/assets/icon/dashboard.svg" label="Pinjaman Saya" iconClass="w-6 h-6 text-primary" />
-        <SidebarMenuItem icon="/assets/icon/dashboard.svg" label="Riwayat Simpanan" iconClass="w-6 h-6 text-primary" />
+  <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Dashboard" active iconClass="w-6 h-6 text-primary" to="/dashboard" />
+  <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Ajukan Pinjaman" iconClass="w-6 h-6 text-primary" to="/ajukan" />
+  <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Pinjaman Saya" iconClass="w-6 h-6 text-primary" to="/pinjaman" />
+  <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Riwayat Simpanan" iconClass="w-6 h-6 text-primary" to="/riwayat" />
       </nav>
     </div>
   );
