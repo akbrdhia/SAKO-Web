@@ -1,7 +1,7 @@
+import { useNavigate } from 'react-router-dom';
 import SidebarLayout from '../layouts/SidebarLayout';
 import { formatCurrency } from '../utils/format';
 import StatusBadge from '../components/StatusBadge';
-import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const navigate = useNavigate();

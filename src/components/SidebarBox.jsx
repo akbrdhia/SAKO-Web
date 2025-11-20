@@ -1,8 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import SidebarMenuItem from "./SidebarMenuItem.jsx";
+
+const menuItems = [
+  { path: '/dashboard', label: 'Dashboard', icon: '/assets/icon/dashboard.svg' },
+  { path: '/ajukan', label: 'Ajukan Pinjaman', icon: '/assets/icon/dashboard.svg' },
+  { path: '/pinjaman', label: 'Pinjaman Saya', icon: '/assets/icon/dashboard.svg' },
+  { path: '/riwayat', label: 'Riwayat Simpanan', icon: '/assets/icon/dashboard.svg' },
+];
 
 export default function SidebarBox() {
   const [open, setOpen] = useState(false);
+  const [indicatorPosition, setIndicatorPosition] = useState(0);
+  const location = useLocation();
+  const navRef = useRef(null);
+  
+  useEffect(() => {
+    // Find active menu index
+    const activeIndex = menuItems.findIndex(item => item.path === location.pathname);
+    if (activeIndex !== -1 && navRef.current) {
+      // Calculate indicator position based on menu item index
+      // Each menu item has gap-8 (32px) between them
+      // Starting position + (index * (item height + gap))
+      const itemHeight = 48; // approximate height of menu item (py-2 + content)
+      const gap = 32; // gap-8 in pixels
+      const position = activeIndex * (itemHeight + gap) - 4; // -4px to center the taller indicator
+      setIndicatorPosition(position);
+    }
+  }, [location.pathname]);
 
   return (
     <>
@@ -16,11 +41,26 @@ export default function SidebarBox() {
        </div>
 
       {/* Menu section */}
-      <nav className="flex-1 w-full flex flex-col gap-8 md:gap-8 px-8">
-        <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Dashboard" active iconClass="w-6 h-6 text-primary" to="/dashboard" />
-        <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Ajukan Pinjaman" iconClass="w-6 h-6 text-primary" to="/ajukan" />
-        <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Pinjaman Saya" iconClass="w-6 h-6 text-primary" to="/pinjaman" />
-        <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Riwayat Simpanan" iconClass="w-6 h-6 text-primary" to="/riwayat" />
+      <nav ref={navRef} className="relative flex-1 w-full flex flex-col gap-8 md:gap-8 px-4 pl-8">
+        {/* Animated indicator at left edge */}
+        <div 
+          className="absolute left-0 w-1.5 h-12 rounded-r-md transition-all duration-300 ease-in-out"
+          style={{ 
+            top: `${indicatorPosition}px`,
+            backgroundColor: '#005266'
+          }}
+        />
+        
+        {menuItems.map((item) => (
+          <SidebarMenuItem 
+            key={item.path}
+            src={item.icon}
+            label={item.label}
+            active={location.pathname === item.path}
+            iconClass="w-6 h-6 text-primary"
+            to={item.path}
+          />
+        ))}
       </nav>
       </div>
 
@@ -53,11 +93,26 @@ export default function SidebarBox() {
             </svg>
           </button>
         </div>
-        <nav className="px-6 py-3 flex flex-col gap-4">
-          <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Dashboard" active iconClass="w-6 h-6 text-primary" to="/dashboard" />
-          <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Ajukan Pinjaman" iconClass="w-6 h-6 text-primary" to="/ajukan" />
-          <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Pinjaman Saya" iconClass="w-6 h-6 text-primary" to="/pinjaman" />
-          <SidebarMenuItem src="/assets/icon/dashboard.svg" label="Riwayat Simpanan" iconClass="w-6 h-6 text-primary" to="/riwayat" />
+        <nav className="relative px-4 py-3 flex flex-col gap-4 pl-8">
+          {/* Animated indicator at left edge for mobile */}
+          <div 
+            className="absolute left-0 w-1.5 h-12 rounded-r-md transition-all duration-300 ease-in-out"
+            style={{ 
+              top: `${indicatorPosition + 12}px`,
+              backgroundColor: '#005266'
+            }}
+          />
+          
+          {menuItems.map((item) => (
+            <SidebarMenuItem 
+              key={item.path}
+              src={item.icon}
+              label={item.label}
+              active={location.pathname === item.path}
+              iconClass="w-6 h-6 text-primary"
+              to={item.path}
+            />
+          ))}
         </nav>
       </aside>
     </>
