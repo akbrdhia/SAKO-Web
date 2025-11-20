@@ -247,7 +247,7 @@ export default function SidebarBox() {
         aria-hidden="true"
       />
       <aside
-        className={`fixed top-5 left-5 bottom-5 w-[80%] max-w-[320px] bg-white z-50 shadow-2xl rounded-2xl transform transition-transform duration-300 ease-out md:hidden flex flex-col overflow-hidden ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-0 left-0 bottom-0 w-[80%] max-w-[320px] bg-white z-50 shadow-2xl rounded-r-2xl transform transition-transform duration-300 ease-out md:hidden flex flex-col overflow-hidden ${open ? 'translate-x-0' : '-translate-x-full'}`}
         id="mobile-sidebar"
       >
         {/* Header with logo and close button */}
