@@ -23,12 +23,14 @@ const menuItems = [
 export default function SidebarBox() {
   const [open, setOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showMobileProfileMenu, setShowMobileProfileMenu] = useState(false);
   const [indicatorPosition, setIndicatorPosition] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout: authLogout } = useAuth();
   const navRef = useRef(null);
   const profileMenuRef = useRef(null);
+  const mobileProfileMenuRef = useRef(null);
   
   // Default avatar if user doesn't have one
   const userAvatar = user?.avatar || "https://i.pravatar.cc/150?img=33";
@@ -48,7 +50,7 @@ export default function SidebarBox() {
     }
   }, [location.pathname]);
 
-  // Close profile menu when clicking outside
+  // Close profile menu when clicking outside (Desktop)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
@@ -64,6 +66,23 @@ export default function SidebarBox() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showProfileMenu]);
+
+  // Close mobile profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mobileProfileMenuRef.current && !mobileProfileMenuRef.current.contains(event.target)) {
+        setShowMobileProfileMenu(false);
+      }
+    };
+
+    if (showMobileProfileMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMobileProfileMenu]);
 
   const handleLogout = async () => {
     // Use auth context logout
@@ -228,7 +247,7 @@ export default function SidebarBox() {
         aria-hidden="true"
       />
       <aside
-        className={`fixed top-0 left-0 bottom-0 w-[80%] max-w-[320px] bg-white z-50 shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-5 left-5 bottom-5 w-[80%] max-w-[320px] bg-white z-50 shadow-2xl rounded-2xl transform transition-transform duration-300 ease-out md:hidden flex flex-col overflow-hidden ${open ? 'translate-x-0' : '-translate-x-full'}`}
         id="mobile-sidebar"
       >
         {/* Header with logo and close button */}
@@ -249,37 +268,111 @@ export default function SidebarBox() {
           </button>
         </div>
 
-        {/* Menu items */}
-        <nav className="relative px-4 py-6 flex flex-col gap-2 flex-1 overflow-y-auto">
-          {/* Animated indicator at left edge for mobile */}
-          <div 
-            className="absolute left-0 w-1 h-14 bg-primary rounded-r-full transition-all duration-300 ease-out shadow-md"
-            style={{ 
-              top: `${indicatorPosition + 24}px`,
-              opacity: menuItems.findIndex(item => item.path === location.pathname) !== -1 ? 1 : 0
-            }}
-          />
-          
-          {menuItems.map((item) => (
-            <div key={item.path} onClick={handleMenuClick}>
-              <SidebarMenuItem 
-                icon={item.Icon}
-                label={item.label}
-                active={location.pathname === item.path}
-                to={item.path}
-              />
-            </div>
-          ))}
-        </nav>
+        {/* Content wrapper for flex layout */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Menu items */}
+          <nav className="relative px-4 py-6 flex flex-col gap-2">
+            {/* Animated indicator at left edge for mobile */}
+            <div 
+              className="absolute left-0 w-1 h-14 bg-primary rounded-r-full transition-all duration-300 ease-out shadow-md"
+              style={{ 
+                top: `${indicatorPosition + 24}px`,
+                opacity: menuItems.findIndex(item => item.path === location.pathname) !== -1 ? 1 : 0
+              }}
+            />
+            
+            {menuItems.map((item) => (
+              <div key={item.path} onClick={handleMenuClick}>
+                <SidebarMenuItem 
+                  icon={item.Icon}
+                  label={item.label}
+                  active={location.pathname === item.path}
+                  to={item.path}
+                />
+              </div>
+            ))}
+          </nav>
+        </div>
 
         {/* Profile section at bottom - Mobile */}
-        <div className="w-full">
+        <div className="w-full relative" ref={mobileProfileMenuRef}>
+          {/* Mobile Profile Menu Popup */}
+          {showMobileProfileMenu && (
+            <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-slideUp">
+              {/* User Info Header */}
+              <div className="px-4 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={userAvatar} 
+                    alt="Profile" 
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/20"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
+                    <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu Items */}
+              <div className="py-2">
+                <button 
+                  onClick={() => {
+                    setShowMobileProfileMenu(false);
+                    setOpen(false);
+                    navigate('/profile');
+                  }}
+                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left group"
+                >
+                  <MdPerson className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Profile</span>
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    setShowMobileProfileMenu(false);
+                    setOpen(false);
+                    navigate('/settings');
+                  }}
+                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left group"
+                >
+                  <MdSettings className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Pengaturan</span>
+                </button>
+
+                <div className="border-t border-gray-100 my-2"></div>
+
+                <button 
+                  onClick={() => {
+                    setShowMobileProfileMenu(false);
+                    setOpen(false);
+                    navigate('/about');
+                  }}
+                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left group"
+                >
+                  <MdInfo className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Tentang</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setShowMobileProfileMenu(false);
+                    setOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 transition-colors text-left group"
+                >
+                  <MdLogout className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
+                  <span className="text-sm font-medium text-red-600 group-hover:text-red-700">Keluar</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Profile Button */}
           <button
-            onClick={() => {
-              setOpen(false);
-              navigate('/profile');
-            }}
-            className="w-full px-4 py-3 flex items-center gap-3 bg-[#F4F8FF] hover:bg-[#E8F1FF] transition-colors cursor-pointer"
+            onClick={() => setShowMobileProfileMenu(!showMobileProfileMenu)}
+            className="w-full px-4 py-3 flex items-center gap-3 bg-[#F4F8FF] hover:bg-[#E8F1FF] transition-colors cursor-pointer rounded-b-2xl"
           >
             <img 
               src={userAvatar} 
