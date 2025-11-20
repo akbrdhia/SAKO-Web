@@ -9,11 +9,16 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [sessionExpiry, setSessionExpiry] = useState(null);
 
-  const logout = useCallback(() => {
-    authService.logout();
-    setUser(null);
-    setIsAuthenticated(false);
-    setSessionExpiry(null);
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      setSessionExpiry(null);
+    }
   }, []);
 
   // Check for existing session on mount

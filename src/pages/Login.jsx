@@ -159,11 +159,13 @@ function Login() {
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <img 
-              src="/assets/kemenkop/logo kemenkop.png" 
+              src="/assets/kemenkop/logo-kemenkop.png" 
               alt="Kemenkop" 
               className="h-16"
               onError={(e) => {
-                e.target.style.display = 'none';
+                // Fallback ke logo lain jika gagal load
+                e.target.onerror = null;
+                e.target.src = '/assets/kemenkop/logo kemenkop.png';
               }}
             />
           </div>

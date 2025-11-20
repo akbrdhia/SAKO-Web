@@ -1,65 +1,27 @@
 /**
  * Authentication Service
- * Handles secure authentication operations with encryption, token management,
- * and security best practices for production environment
+ * Handles authentication operations with backend API integration
  */
 
+import { apiService } from './apiService';
+import { ENV, logger } from '../config/env';
+
 const SESSION_KEY = 'sako_session';
-const SESSION_DURATION = 3600000; // 1 hour in milliseconds
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 300000; // 5 minutes
+const SESSION_DURATION = ENV.AUTH.SESSION_DURATION;
+const MAX_LOGIN_ATTEMPTS = ENV.AUTH.MAX_LOGIN_ATTEMPTS;
+const LOCKOUT_DURATION = ENV.AUTH.LOCKOUT_DURATION;
 
-// Simulated secure password hashing (In production, use backend API with bcrypt)
-const hashPassword = async (password) => {
-  // This is a simplified version. In production, this should be done on the backend
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-};
-
-// Simulated user database (In production, this would be backend API calls)
-const MOCK_USERS = [
-  {
-    id: '1',
-    email: 'admin@sako.id',
-    username: 'admin',
-    passwordHash: null, // Will be set on first call
-    name: 'Administrator',
-    role: 'admin',
-    mfaEnabled: false
-  },
-  {
-    id: '2',
-    email: 'user@sako.id',
-    username: 'user',
-    passwordHash: null,
-    name: 'User Demo',
-    role: 'user',
-    mfaEnabled: false
-  }
-];
-
-// Initialize password hashes
-const initializeUsers = async () => {
-  if (!MOCK_USERS[0].passwordHash) {
-    MOCK_USERS[0].passwordHash = await hashPassword('Admin123!');
-    MOCK_USERS[1].passwordHash = await hashPassword('User123!');
-  }
-};
-
-// Generate secure random token
-const generateToken = () => {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-};
-
-// Generate CSRF token
+// Generate CSRF token (for local session tracking)
 const generateCSRFToken = () => {
-  return generateToken();
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+  // Fallback for dev
+  return Array.from({ length: 64 }, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
 };
 
 // Encrypt sensitive data before storing (simplified for demo)
@@ -188,15 +150,12 @@ const validatePasswordStrength = (password) => {
 // Main authentication service
 export const authService = {
   /**
-   * Login user with email/username and password
+   * Login user with email and password
    */
-  login: async (emailOrUsername, password) => {
+  login: async (email, password) => {
     try {
-      // Initialize users if needed
-      await initializeUsers();
-      
       // Rate limiting check
-      const rateLimitCheck = checkRateLimit(emailOrUsername);
+      const rateLimitCheck = checkRateLimit(email);
       if (!rateLimitCheck.allowed) {
         return {
           success: false,
@@ -204,56 +163,43 @@ export const authService = {
         };
       }
       
-      // Input sanitization
-      const sanitizedInput = emailOrUsername.trim().toLowerCase();
+      // Call backend API
+      const response = await apiService.post('/auth/login', {
+        email: email.trim(),
+        password
+      });
       
-      // Find user
-      const user = MOCK_USERS.find(u => 
-        u.email.toLowerCase() === sanitizedInput || 
-        u.username.toLowerCase() === sanitizedInput
-      );
-      
-      if (!user) {
-        recordLoginAttempt(emailOrUsername);
+      // Backend returns: { success, message, data: { user, token, token_type } }
+      if (!response.success || !response.data) {
+        recordLoginAttempt(email);
         return {
           success: false,
-          message: 'Email/Username atau password salah'
-        };
-      }
-      
-      // Verify password
-      const passwordHash = await hashPassword(password);
-      if (passwordHash !== user.passwordHash) {
-        recordLoginAttempt(emailOrUsername);
-        return {
-          success: false,
-          message: 'Email/Username atau password salah'
+          message: response.message || 'Email atau password salah'
         };
       }
       
       // Clear failed attempts
-      clearLoginAttempts(emailOrUsername);
+      clearLoginAttempts(email);
       
-      // Generate tokens
-      const accessToken = generateToken();
-      const refreshToken = generateToken();
+      const { user, token } = response.data;
+      
+      // Generate CSRF token locally
       const csrfToken = generateCSRFToken();
       
       const now = Date.now();
       const expiresAt = now + SESSION_DURATION;
       
-      // Create session data (exclude sensitive info)
+      // Create session data
       const sessionData = {
-        token: accessToken,
-        refreshToken,
+        token, // JWT from backend
         csrfToken,
         user: {
           id: user.id,
           email: user.email,
-          username: user.username,
-          name: user.name,
+          name: user.nama, // Backend uses 'nama'
           role: user.role,
-          mfaEnabled: user.mfaEnabled
+          no_anggota: user.no_anggota,
+          koperasi: user.koperasi
         },
         expiresAt,
         createdAt: now
@@ -269,17 +215,10 @@ export const authService = {
         };
       }
       
-      // Store refresh token separately (more persistent)
-      localStorage.setItem(`${SESSION_KEY}_refresh`, encryptData({
-        token: refreshToken,
-        expiresAt: now + (SESSION_DURATION * 24) // 24 hours
-      }));
-      
-      // Log successful login (in production, send to backend)
-      console.info('Successful login:', {
+      // Log successful login
+      logger.info('Successful login:', {
         userId: user.id,
-        timestamp: new Date(now).toISOString(),
-        userAgent: navigator.userAgent
+        timestamp: new Date(now).toISOString()
       });
       
       return {
@@ -290,9 +229,11 @@ export const authService = {
       
     } catch (error) {
       console.error('Login error:', error);
+      recordLoginAttempt(email);
+      
       return {
         success: false,
-        message: 'Terjadi kesalahan saat login. Silakan coba lagi.'
+        message: error.message || 'Terjadi kesalahan saat login. Silakan coba lagi.'
       };
     }
   },
@@ -300,14 +241,21 @@ export const authService = {
   /**
    * Logout user
    */
-  logout: () => {
+  logout: async () => {
     const session = getCurrentSession();
     if (session) {
-      // Log logout event (in production, send to backend)
-      console.info('User logged out:', {
-        userId: session.user.id,
-        timestamp: new Date().toISOString()
-      });
+      try {
+        // Call backend API to invalidate token
+        await apiService.post('/auth/logout');
+        
+        logger.info('User logged out:', {
+          userId: session.user.id,
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Continue with local logout even if API call fails
+      }
     }
     
     clearSession();
@@ -319,6 +267,24 @@ export const authService = {
   getCurrentSession,
   
   /**
+   * Get current user from backend
+   */
+  getCurrentUser: async () => {
+    try {
+      const response = await apiService.get('/auth/me');
+      
+      if (!response.success || !response.data) {
+        return null;
+      }
+      
+      return response.data; // User data from backend
+    } catch (error) {
+      console.error('Get current user error:', error);
+      return null;
+    }
+  },
+  
+  /**
    * Refresh access token
    */
   refreshToken: async () => {
@@ -326,33 +292,32 @@ export const authService = {
       const currentSession = getCurrentSession();
       if (!currentSession) return null;
       
-      const refreshTokenData = localStorage.getItem(`${SESSION_KEY}_refresh`);
-      if (!refreshTokenData) return null;
+      // Call backend API to refresh token
+      const response = await apiService.post('/auth/refresh');
       
-      const { expiresAt } = decryptData(refreshTokenData);
-      
-      // Check if refresh token expired
-      if (Date.now() >= expiresAt) {
+      if (!response.success || !response.data) {
         clearSession();
         return null;
       }
       
-      // Generate new access token
-      const newAccessToken = generateToken();
+      const { token } = response.data;
       const now = Date.now();
       const newExpiresAt = now + SESSION_DURATION;
       
       const newSession = {
         ...currentSession,
-        token: newAccessToken,
+        token, // New JWT from backend
         expiresAt: newExpiresAt
       };
       
       storeSession(newSession);
       
+      logger.info('Token refreshed successfully');
+      
       return newSession;
     } catch (error) {
       console.error('Token refresh error:', error);
+      clearSession();
       return null;
     }
   },
@@ -387,5 +352,29 @@ export const authService = {
   verifyCSRFToken: (token) => {
     const session = getCurrentSession();
     return session && session.csrfToken === token;
+  },
+  
+  /**
+   * Change password
+   */
+  changePassword: async (currentPassword, newPassword, newPasswordConfirmation) => {
+    try {
+      const response = await apiService.post('/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: newPasswordConfirmation
+      });
+      
+      return {
+        success: response.success,
+        message: response.message
+      };
+    } catch (error) {
+      console.error('Change password error:', error);
+      return {
+        success: false,
+        message: error.message || 'Gagal mengubah password'
+      };
+    }
   }
 };
