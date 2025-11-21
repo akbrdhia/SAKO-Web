@@ -309,7 +309,7 @@ function Login() {
                 </Link>
               </div>
               {rememberMe && (
-                <small className="text-xs text-gray-500 pl-6" aria-label="Pemberitahuan privasi tentang ingat saya">
+                <small className="text-xs text-gray-500 pl-6">
                   Email Anda akan disimpan di perangkat ini untuk kemudahan login di masa mendatang.
                 </small>
               )}
