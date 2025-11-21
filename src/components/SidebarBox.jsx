@@ -24,6 +24,7 @@ export default function SidebarBox() {
   const [open, setOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileProfileMenu, setShowMobileProfileMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [indicatorPosition, setIndicatorPosition] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,14 +42,25 @@ export default function SidebarBox() {
   useEffect(() => {
     // Find active menu index
     const activeIndex = menuItems.findIndex(item => item.path === location.pathname);
-    if (activeIndex !== -1 && navRef.current) {
+    if (activeIndex !== -1) {
       // Calculate indicator position based on menu item index
-      const itemHeight = 56; // approximate height of menu item (py-3 + content)
+      const itemHeight = 52; // approximate height of menu item (py-3 + content)
       const gap = 8; // gap-2 in pixels
       const position = activeIndex * (itemHeight + gap);
       setIndicatorPosition(position);
     }
   }, [location.pathname]);
+
+  // Set initial indicator position on mount
+  useEffect(() => {
+    const activeIndex = menuItems.findIndex(item => item.path === location.pathname);
+    if (activeIndex !== -1) {
+      const itemHeight = 52;
+      const gap = 8;
+      const position = activeIndex * (itemHeight + gap);
+      setIndicatorPosition(position);
+    }
+  }, []);
 
   // Close profile menu when clicking outside (Desktop)
   useEffect(() => {
@@ -84,10 +96,21 @@ export default function SidebarBox() {
     };
   }, [showMobileProfileMenu]);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = async () => {
+    setShowLogoutConfirm(false);
+    setShowProfileMenu(false);
+    setShowMobileProfileMenu(false);
     // Use auth context logout
     await authLogout();
     navigate('/login');
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   // Close sidebar when clicking menu item on mobile
@@ -99,6 +122,37 @@ export default function SidebarBox() {
 
   return (
     <>
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slideUp">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <MdLogout className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Konfirmasi Keluar</h3>
+                <p className="text-sm text-gray-600">Apakah Anda yakin ingin keluar?</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={cancelLogout}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Desktop / large sidebar */}
       <div
         className="hidden md:flex w-[286px] h-[calc(100vh-40px)] static rounded-2xl shadow-lg ml-5 mt-5 flex-col items-start justify-between bg-white z-50 overflow-hidden"
@@ -115,9 +169,9 @@ export default function SidebarBox() {
 
           {/* Menu section */}
           <nav ref={navRef} className="relative w-full flex flex-col gap-2 px-4 py-6">
-            {/* Animated indicator at left edge */}
+            {/* Animated indicator box at left edge */}
             <div 
-              className="absolute left-0 w-1 h-14 bg-primary rounded-r-full transition-all duration-300 ease-out shadow-md"
+              className="absolute left-0 w-1.5 h-12 bg-[#005266] rounded-r-md transition-all duration-300 ease-out shadow-md"
               style={{ 
                 top: `${indicatorPosition + 24}px`,
                 opacity: menuItems.findIndex(item => item.path === location.pathname) !== -1 ? 1 : 0
@@ -194,10 +248,7 @@ export default function SidebarBox() {
                 </button>
 
                 <button 
-                  onClick={() => {
-                    setShowProfileMenu(false);
-                    handleLogout();
-                  }}
+                  onClick={handleLogout}
                   className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 transition-colors text-left group"
                 >
                   <MdLogout className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
@@ -272,9 +323,9 @@ export default function SidebarBox() {
         <div className="flex-1 overflow-y-auto">
           {/* Menu items */}
           <nav className="relative px-4 py-6 flex flex-col gap-2">
-            {/* Animated indicator at left edge for mobile */}
+            {/* Animated indicator box at left edge for mobile */}
             <div 
-              className="absolute left-0 w-1 h-14 bg-primary rounded-r-full transition-all duration-300 ease-out shadow-md"
+              className="absolute left-0 w-1.5 h-12 bg-primary rounded-r-md transition-all duration-300 ease-out shadow-md"
               style={{ 
                 top: `${indicatorPosition + 24}px`,
                 opacity: menuItems.findIndex(item => item.path === location.pathname) !== -1 ? 1 : 0
@@ -355,11 +406,7 @@ export default function SidebarBox() {
                 </button>
 
                 <button 
-                  onClick={() => {
-                    setShowMobileProfileMenu(false);
-                    setOpen(false);
-                    handleLogout();
-                  }}
+                  onClick={handleLogout}
                   className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 transition-colors text-left group"
                 >
                   <MdLogout className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
