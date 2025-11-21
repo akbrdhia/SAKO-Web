@@ -287,25 +287,32 @@ function Login() {
             </div>
 
             {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  disabled={isLocked || isLoading}
-                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 focus:ring-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <span className={`text-sm text-gray-700 ${isLocked || isLoading ? 'opacity-50' : ''}`}>
-                  Ingat saya
-                </span>
-              </label>
-              <Link 
-                to="/forgot-password" 
-                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-              >
-                Lupa password?
-              </Link>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLocked || isLoading}
+                    className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 focus:ring-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <span className={`text-sm text-gray-700 ${isLocked || isLoading ? 'opacity-50' : ''}`}>
+                    Ingat saya
+                  </span>
+                </label>
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                >
+                  Lupa password?
+                </Link>
+              </div>
+              {rememberMe && (
+                <p className="text-xs text-gray-500 ml-6">
+                  Email Anda akan disimpan di perangkat ini untuk kemudahan login di masa mendatang.
+                </p>
+              )}
             </div>
 
             {/* Login Button */}
