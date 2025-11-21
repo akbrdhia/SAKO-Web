@@ -14,10 +14,20 @@ function Login() {
   
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutTime, setLockoutTime] = useState(null);
+
+  // Load saved email if remember me was checked
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail }));
+      setRememberMe(true);
+    }
+  }, []);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -103,6 +113,14 @@ function Login() {
       if (result.success) {
         // Reset attempts on successful login
         setLoginAttempts(0);
+        
+        // Save email if remember me is checked
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', formData.email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+        
         navigate('/dashboard');
       } else {
         // Increment failed attempts
@@ -143,11 +161,11 @@ function Login() {
           }}
         >
           <div>
-            <h1 className="text-[46px] font-bold text-white mb-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
-              Platform Simpan Pinjam
+            <h1 className="text-[42px] font-bold text-white mb-4" style={{ fontFamily: 'Roboto, sans-serif' }}>
+             SAKO - Sahabat Koperasi
             </h1>
-            <p className="text-[26px] text-white" style={{ fontFamily: 'Roboto, sans-serif' }}>
-              Keamanan 2FA, login cepat, dan pengalaman modern.
+            <p className="text-[22px] text-white" style={{ fontFamily: 'Roboto, sans-serif' }}>
+              Platform digital terpadu untuk transformasi koperasi simpan pinjam Indonesia.
             </p>
           </div>
         </div>
@@ -268,8 +286,20 @@ function Login() {
               )}
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="flex justify-end">
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isLocked || isLoading}
+                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 focus:ring-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <span className={`text-sm text-gray-700 ${isLocked || isLoading ? 'opacity-50' : ''}`}>
+                  Ingat saya
+                </span>
+              </label>
               <Link 
                 to="/forgot-password" 
                 className="text-sm text-teal-600 hover:text-teal-700 font-medium"
@@ -302,17 +332,6 @@ function Login() {
             </button>
           </form>
 
-          {/* Register Link */}
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Belum punya akun?{' '}
-            <Link 
-              to="/register" 
-              className="text-teal-600 hover:text-teal-700 font-medium"
-            >
-              Daftar
-            </Link>
-          </p>
-
           {/* Security Notice */}
           <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-start">
@@ -321,10 +340,10 @@ function Login() {
               </svg>
               <div>
                 <h4 className="text-sm font-medium text-blue-900 mb-1">
-                  Keamanan Akun Terjamin
+                  Catatan:
                 </h4>
                 <p className="text-xs text-blue-700">
-                  Login Anda dilindungi dengan enkripsi tingkat enterprise dan autentikasi multi-faktor.
+                  Pastikan Anda tidak membagikan informasi login kepada siapapun. Sako menggunakan keamanan 2FA untuk melindungi akun Anda.
                 </p>
               </div>
             </div>
